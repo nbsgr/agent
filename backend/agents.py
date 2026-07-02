@@ -285,6 +285,8 @@ def _build_messages(system_prompt, history, current_message, images):
 def _sanitize_messages(messages, provider):
     """Sanitize the messages list to ensure it is fully compliant with target API specs."""
     sanitized = []
+    allowed_tool_call_ids = set()
+
     for msg in messages:
         if not isinstance(msg, dict):
             try:
@@ -327,6 +329,14 @@ def _sanitize_messages(messages, provider):
                     func = tc.get("function", {})
                     func_name = func.get("name") or tc.get("name") or ""
                     func_args = func.get("arguments") or tc.get("arguments") or {}
+
+                    # Filter out tool calls that are not declared in TOOL_DESCRIPTIONS (to prevent Bad Request errors on strict APIs)
+                    if provider == "cloud" and TOOL_DESCRIPTIONS:
+                        valid_tool_names = {t["function"]["name"] for t in TOOL_DESCRIPTIONS}
+                        if func_name not in valid_tool_names:
+                            logger.warning(f"[SANITIZE] Filtering out undefined tool call: {func_name}")
+                            continue
+
                     if provider == "cloud":
                         if isinstance(func_args, dict):
                             func_args = json.dumps(func_args)
@@ -345,18 +355,31 @@ def _sanitize_messages(messages, provider):
                             "arguments": func_args
                         }
                     })
-                assistant_msg["tool_calls"] = tcs
-                if provider == "cloud":
-                    assistant_msg["content"] = None
+                    allowed_tool_call_ids.add(tc_id)
+                
+                if tcs:
+                    assistant_msg["tool_calls"] = tcs
+                    if provider == "cloud":
+                        assistant_msg["content"] = None
                     
             sanitized.append(assistant_msg)
         elif role == "tool":
-            tool_msg = {"role": "tool", "content": content}
-            tc_id = msg.get("tool_call_id")
+            tc_id = msg.get("tool_call_id") or ""
             if provider == "cloud":
-                tool_msg["tool_call_id"] = tc_id or "call_mock_1"
+                if tc_id not in allowed_tool_call_ids:
+                    logger.warning(f"[SANITIZE] Filtering out tool message with no matching assistant tool call: {tc_id}")
+                    continue
+                tool_msg = {
+                    "role": "tool",
+                    "tool_call_id": tc_id,
+                    "content": content
+                }
             else:
-                tool_msg["name"] = msg.get("tool_name") or "tool"
+                tool_msg = {
+                    "role": "tool",
+                    "name": msg.get("tool_name") or "tool",
+                    "content": content
+                }
             sanitized.append(tool_msg)
             
     return sanitized
@@ -687,13 +710,16 @@ def stream(message, model, workspace, history, images):
         yield json.dumps({"type": "agent_status", "status": "executing_tools", "count": len(tool_calls)}) + "\n"
 
         tool_results = []
-        for tc in tool_calls:
+        for i, tc in enumerate(tool_calls):
             tool_name, arguments = _parse_tool_call(tc)
             tc_id = ""
             if hasattr(tc, "id"):
                 tc_id = getattr(tc, "id", "") or ""
             elif isinstance(tc, dict):
                 tc_id = tc.get("id", "") or ""
+            
+            if not tc_id:
+                tc_id = f"call_mock_{iteration}_{i}"
 
             logger.info(f"[AGENT] Executing tool: {tool_name} args={arguments} tool_call_id={tc_id}")
 
@@ -710,8 +736,12 @@ def stream(message, model, workspace, history, images):
         yield json.dumps({"type": "agent_iteration", "iteration": iteration, "phase": "tools_executed"}) + "\n"
 
         # Append assistant response + tool results to messages for next iteration
-        # FIXED: Convert Pydantic tool_calls to dicts for JSON serialization in messages
-        tool_calls_dicts = [_tool_call_to_dict(tc) for tc in tool_calls]
+        tool_calls_dicts = []
+        for i, tc in enumerate(tool_calls):
+            tc_dict = _tool_call_to_dict(tc)
+            if not tc_dict.get("id"):
+                tc_dict["id"] = f"call_mock_{iteration}_{i}"
+            tool_calls_dicts.append(tc_dict)
 
         assistant_msg = {
             "role": "assistant",
@@ -725,7 +755,7 @@ def stream(message, model, workspace, history, images):
         for tr in tool_results:
             messages.append({
                 "role": "tool",
-                "tool_call_id": tr["tool_call_id"] or "call_mock_1",
+                "tool_call_id": tr["tool_call_id"],
                 "content": _format_tool_result(tr)
             })
 

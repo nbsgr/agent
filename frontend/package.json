@@ -2,9 +2,13 @@
   "name": "aibot-coder-agent",
   "displayName": "AI Bot Coder Agent",
   "description": "AI coding agent with chat, tools, and terminal execution.",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "publisher": "Bala-Siva-Ganesh",
   "icon": "logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nbsgr/agent.git"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
