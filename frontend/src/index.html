@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Bot</title>
+  <link rel="stylesheet" href="Dashboard.css">
+  <link rel="stylesheet" href="ChatSpace.css">
+  <base target="_blank">
+<base target="_blank">
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="MarkdownRenderer.js"></script>
+  <script src="Dashboard.js"></script>
+  <script src="ChatSpace.js"></script>
+  <script>
+    // Standalone mode: direct fetch to backend via devtunnel
+    window.BACKEND_URL = 'https://1jr88jrl-5000.inc1.devtunnels.ms';
+    window.WORKSPACE_FOLDER = '';
+    window.VSCODE = false;
+    window.USE_EXTENSION_PROXY = false;
+
+    window.onload = function() {
+      if (typeof renderDashboard === 'function') {
+        renderDashboard(document.getElementById('app'));
+      } else {
+        document.getElementById('app').innerHTML = '<div style="color:red;padding:20px;">Error: Dashboard not loaded</div>';
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,663 @@
+/* =====================================================
+   ChatSpace.css — GitHub Copilot-style dark theme chat
+   Shows: thinking blocks, tool calls, actions, content, terminal
+   ===================================================== */
+
+/* ── Root ─────────────────────────────────────────────── */
+.cs-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-foreground, #cccccc);
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.cs-header {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #2d2d2d;
+  background: #252526;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #cccccc;
+}
+
+.cs-header-avatar { display: flex; align-items: center; opacity: 0.75; }
+.cs-header-title  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Message list ──────────────────────────────────────── */
+.cs-msg-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 14px 8px;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cs-msg-list::-webkit-scrollbar        { width: 6px; }
+.cs-msg-list::-webkit-scrollbar-track  { background: transparent; }
+.cs-msg-list::-webkit-scrollbar-thumb  { background: #3e3e3e; border-radius: 3px; }
+
+/* ── Message rows ────────────────────────────────────── */
+.cs-row {
+  display: flex;
+  gap: 12px;
+  max-width: 100%;
+  padding: 12px 0;
+  animation: fadeIn 0.16s ease-in;
+}
+.cs-row + .cs-row { margin-top: 0; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* User row — right-aligned ────────────────────────────── */
+.cs-row--user { justify-content: flex-end; border-bottom-color: transparent; }
+.cs-user-bubble {
+  max-width: min(760px, 86%);
+  background: var(--vscode-chat-requestBackground, #2b2b2b);
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 8px;
+  padding: 10px 12px;
+  word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cs-user-text  { color: var(--vscode-foreground, #cccccc); white-space: pre-wrap; }
+.cs-attach-thumb {
+  max-width: 200px;
+  max-height: 140px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.cs-msg-time {
+  font-size: 10px;
+  color: #666;
+  align-self: flex-end;
+  margin-top: 2px;
+}
+
+/* Bot row — left-aligned with avatar ──────────────────── */
+.cs-row--bot { justify-content: flex-start; align-items: flex-start; }
+.cs-bot-avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #2ea043;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #ffffff;
+}
+
+.cs-bot-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--vscode-chat-responseBackground, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--vscode-chat-border, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.12);
+  margin-top: 2px;
+}
+
+/* ── Icons ─────────────────────────────────────────────── */
+.cs-icon { width: 14px; height: 14px; flex-shrink: 0; vertical-align: middle; }
+.cs-icon--check { color: #4ec9b0; }
+
+/* ── Typing indicator (3 dots) ───────────────────────── */
+.cs-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+}
+
+.cs-typing span {
+  width: 6px; height: 6px;
+  background: #6a9dc8;
+  border-radius: 50%;
+  display: inline-block;
+  animation: cs-bounce 1.2s ease-in-out infinite;
+}
+
+.cs-typing span:nth-child(2) { animation-delay: 0.2s; }
+.cs-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes cs-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30%            { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ── Spinning icon ───────────────────────────────────── */
+.cs-spin-icon {
+  animation: cs-rotate 0.8s linear infinite;
+  color: #569cd6;
+}
+
+@keyframes cs-rotate { to { transform: rotate(360deg); } }
+
+/* ── Thinking block ──────────────────────────────────── */
+.cs-think-block {
+  border: 0;
+  border-left: 2px solid var(--vscode-sideBar-border, #4a4a4a);
+  background: transparent;
+  margin: 6px 0;
+  padding-left: 6px;
+}
+
+.cs-think-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  font-size: 11.5px;
+  color: var(--vscode-descriptionForeground, #858585);
+  font-weight: 500;
+  outline: none;
+  transition: color 0.15s ease;
+}
+
+.cs-think-summary::-webkit-details-marker { display: none; }
+.cs-think-summary:hover { color: var(--vscode-foreground, #ffffff); }
+.cs-think-label { flex: 1; }
+
+.cs-think-chevron {
+  width: 14px; height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.cs-think-chevron::before { content: '▶'; font-size: 8px; }
+.cs-think-block[open] .cs-think-chevron { transform: rotate(90deg); }
+
+.cs-think-pre {
+  margin: 6px 0 0 0;
+  padding: 8px 10px;
+  font-family: var(--vscode-editor-font-family, 'Cascadia Code', 'Consolas', monospace);
+  font-size: 11.5px;
+  color: var(--vscode-descriptionForeground, #858585);
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 0;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ── Content block ───────────────────────────────────── */
+.cs-content-block {
+  color: #d4d4d4;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* ── Tool call block ─────────────────────────────────── */
+.cs-tool-call {
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-left: 2px solid var(--vscode-textLink-foreground, #3794ff);
+  border-radius: 4px;
+  background: var(--vscode-editor-background, #1e1e1e);
+  overflow: hidden;
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.cs-tool-call-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  background: #212121;
+  color: #569cd6;
+  font-weight: 500;
+}
+
+.cs-tool-name { font-family: 'Cascadia Code', 'Consolas', monospace; }
+.cs-tool-id   { color: #888; font-size: 11px; margin-left: auto; }
+
+.cs-tool-args {
+  margin: 0;
+  padding: 8px 12px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 11.5px;
+  color: #9cdcfe;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid #2a2a2a;
+}
+
+.cs-tool-args code { background: transparent; }
+
+/* ── Tool result block ───────────────────────────────── */
+.cs-tool-result-block {
+  border: 1px solid #3a3a3a;
+  border-left: 3px solid #4ec9b0;
+  border-radius: 6px;
+  background: #1c1c1c;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.cs-tool-result-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #212121;
+  color: #4ec9b0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cs-tool-result-body {
+  margin: 0;
+  padding: 10px 12px;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+  border-top: 1px solid #2a2a2a;
+}
+
+/* ── Action list ─────────────────────────────────────── */
+.cs-action-list { display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Action item ─────────────────────────────────────── */
+.cs-action-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 0;
+  border-radius: 0;
+  font-size: 12px;
+  background: transparent;
+  border: 0;
+  flex-wrap: wrap;
+  animation: fadeIn 0.15s ease-in;
+}
+
+.cs-action-item--started,
+.cs-action-item--completed,
+.cs-action-item--error {
+  border-left: 0 !important;
+}
+
+.cs-action-status-icon { flex-shrink: 0; display: flex; align-items: center; }
+.cs-action-label  { flex: 1; min-width: 0; color: #d4d4d4; font-family: inherit; }
+.cs-action-name   { font-family: 'Cascadia Code', 'Consolas', monospace; color: #9cdcfe; background: transparent; }
+.cs-action-args   { color: #888; font-size: 11px; }
+.cs-action-iter   { color: #666; font-size: 10px; font-family: monospace; }
+
+.cs-ak { color: #ce9178; }
+.cs-av { color: #4ec9b0; }
+
+.cs-action-time   { color: #888; font-size: 11px; white-space: nowrap; }
+.cs-action-result {
+  width: 100%;
+  color: #8a8a8a;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 20px;
+}
+
+/* ── Sources ───────────────────────────────────────────── */
+.cs-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.cs-sources-lbl  { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.cs-source-chip  {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #2d2d2d;
+  border: 1px solid #3e3e3e;
+  border-radius: 12px;
+  font-size: 11.5px;
+  color: #569cd6;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cs-source-chip:hover { background: #363636; }
+
+/* ── Error line ──────────────────────────────────────── */
+.cs-error-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(244, 71, 71, 0.12);
+  border: 1px solid rgba(244, 71, 71, 0.3);
+  border-radius: 6px;
+  color: #f48771;
+  font-size: 12.5px;
+  margin: 4px 0;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.cs-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 10px;
+  opacity: 0.7;
+}
+
+.cs-empty-icon  { font-size: 40px; color: #4a4a4a; }
+.cs-empty-icon .cs-icon { width: 48px; height: 48px; color: #4a4a4a; }
+.cs-empty-title { font-size: 16px; font-weight: 500; color: #8a8a8a; margin: 0; }
+.cs-empty-sub   { font-size: 13px; color: #5a5a5a; margin: 0; max-width: 280px; }
+
+/* ── Composer ────────────────────────────────────────── */
+.cs-composer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--vscode-sideBar-border, #2b2b2b);
+  background: var(--vscode-editor-background, #1e1e1e);
+  padding: 8px 10px 8px;
+}
+
+.cs-img-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: #2d2d2d;
+  border-radius: 8px;
+  border: 1px solid #3e3e3e;
+}
+
+.cs-preview-img  { max-height: 60px; max-width: 80px; border-radius: 6px; object-fit: cover; }
+
+.cs-clear-img-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.cs-clear-img-btn:hover { color: #f48771; background: rgba(244,71,71,0.12); }
+
+.cs-composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.cs-textarea {
+  flex: 1;
+  background: var(--vscode-input-background, #242424);
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 4px;
+  color: var(--vscode-input-foreground, #cccccc);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 9px 12px;
+  resize: none;
+  outline: none;
+  min-height: 38px;
+  max-height: 180px;
+  overflow-y: auto;
+  transition: border-color 0.15s;
+}
+
+.cs-textarea:focus       { border-color: #569cd6; }
+.cs-textarea:disabled    { opacity: 0.5; cursor: not-allowed; }
+.cs-textarea::placeholder { color: #5a5a5a; }
+
+.cs-attach-btn,
+.cs-send-btn,
+.cs-stop-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: none;
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 4px;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.cs-attach-btn:hover { color: #d4d4d4; background: #2d2d2d; border-color: #555; }
+
+.cs-send-btn         { background: var(--vscode-button-background, #0e639c); border-color: var(--vscode-button-background, #0e639c); color: var(--vscode-button-foreground, #fff); }
+.cs-send-btn:hover:not(:disabled) { background: #1e8aff; border-color: #1e8aff; }
+.cs-send-btn:disabled             { opacity: 0.45; cursor: not-allowed; }
+.cs-send-btn--busy { background: #2d2d2d; border-color: #3e3e3e; color: #569cd6; }
+
+.cs-stop-btn { background: #f85149; border-color: #f85149; color: #fff; }
+.cs-stop-btn:hover { background: #d43d36; }
+
+.cs-composer-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 4px 0;
+  font-size: 11px;
+  color: #5a5a5a;
+}
+
+/* ── Markdown inside .cs-content-block ───────────────── */
+.cs-content-block .md-p      { margin: 0 0 10px; }
+.cs-content-block .md-p:last-child { margin-bottom: 0; }
+
+.cs-content-block .md-h1,
+.cs-content-block .md-h2,
+.cs-content-block .md-h3,
+.cs-content-block .md-h4,
+.cs-content-block .md-h5,
+.cs-content-block .md-h6     { margin: 14px 0 6px; font-weight: 600; color: #e0e0e0; }
+
+.cs-content-block .md-h1     { font-size: 1.3em; border-bottom: 1px solid #2d2d2d; padding-bottom: 4px; }
+.cs-content-block .md-h2     { font-size: 1.15em; }
+.cs-content-block .md-h3     { font-size: 1.05em; }
+
+.cs-content-block .md-hr     { border: none; border-top: 1px solid #2d2d2d; margin: 12px 0; }
+
+.cs-content-block .md-blockquote {
+  margin: 8px 0; padding: 8px 12px;
+  border-left: 3px solid #569cd6;
+  background: #1c2333; border-radius: 0 6px 6px 0;
+  color: #9ac;
+}
+
+.cs-content-block .md-ul,
+.cs-content-block .md-ol     { padding-left: 20px; margin: 6px 0; }
+.cs-content-block .md-li     { margin-bottom: 3px; }
+.cs-content-block .md-link   { color: #569cd6; text-decoration: underline; }
+.cs-content-block .md-link:hover { text-decoration: none; }
+.cs-content-block .md-img    { max-width: 100%; border-radius: 6px; margin: 4px 0; }
+
+.cs-content-block .md-inline-code {
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.9em;
+  background: #252526;
+  border: 1px solid #3e3e3e;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #9cdcfe;
+}
+
+/* Code block wrapper */
+.cs-content-block .md-code-wrap {
+  border: 1px solid #3e3e3e;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 8px 0;
+  background: #1e1e1e;
+}
+
+.cs-content-block .md-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  background: #252526;
+  border-bottom: 1px solid #3e3e3e;
+}
+
+.cs-content-block .md-code-lang {
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 11px;
+  color: #888;
+  text-transform: lowercase;
+}
+
+.cs-content-block .md-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.cs-content-block .md-copy-btn:hover   { color: #d4d4d4; background: #3a3a3a; }
+.cs-content-block .md-copy-btn::after  { content: 'Copy'; }
+.cs-content-block .md-copy-btn.md-copied { color: #4ec9b0; }
+.cs-content-block .md-copy-btn.md-copied::after { content: 'Copied!'; }
+
+.cs-content-block .md-pre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  background: #1e1e1e;
+}
+
+.cs-content-block .md-code {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #d4d4d4;
+  white-space: pre;
+  display: block;
+  background: transparent;
+}
+
+/* Syntax highlighting colors */
+.cs-content-block .md-kw      { color: #c586c0; } /* keyword */
+.cs-content-block .md-str     { color: #ce9178; } /* string */
+.cs-content-block .md-num     { color: #b5cea8; } /* number */
+.cs-content-block .md-comment { color: #6a9955; } /* comment */
+.cs-content-block .md-func    { color: #dcdcaa; } /* function */
+.cs-content-block .md-bool    { color: #569cd6; } /* boolean */
+.cs-content-block .md-tag     { color: #569cd6; } /* HTML tag */
+.cs-content-block .md-attr    { color: #9cdcfe; } /* HTML attribute */
+.cs-content-block .md-val     { color: #ce9178; } /* CSS value */
+
+/* Tables */
+.cs-content-block .md-table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  width: 100%;
+  font-size: 13px;
+}
+
+.cs-content-block .md-table th,
+.cs-content-block .md-table td {
+  border: 1px solid #3e3e3e;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.cs-content-block .md-table th {
+  background: #252526;
+  font-weight: 600;
+}
+
+.cs-content-block .md-table tr:nth-child(even) {
+  background: #1a1a1a;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .cs-user-bubble { max-width: 85%; }
+  .cs-stop-btn { display: none; }
+}
+
+/* ── Status timeline progress lines ──────────────────── */
+.cs-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #888888;
+  padding: 3px 0;
+  margin: 1px 0;
+  animation: cs-fadeIn 0.15s ease-in;
+}
+
+.cs-status-bullet {
+  color: #3794ff;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cs-status-text {
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+
+@keyframes cs-fadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}

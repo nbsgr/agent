@@ -1,0 +1,82 @@
+{
+  "name": "aibot-coder-agent",
+  "displayName": "AI Bot Coder Agent",
+  "description": "AI coding agent with chat, tools, and terminal execution.",
+  "version": "3.2.0",
+  "publisher": "Bala-Siva-Ganesh",
+  "icon": "logo.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "type": "module",
+  "categories": [
+    "Machine Learning",
+    "Programming Languages",
+    "Chat"
+  ],
+  "activationEvents": [
+    "onView:aibot.chatView",
+    "onCommand:aibot.openSidebar",
+    "onCommand:aibot.openPanel"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aibot.openSidebar",
+        "title": "AI Bot: Open Sidebar",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "aibot.openPanel",
+        "title": "AI Bot: Open Panel",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "aibot.newChat",
+        "title": "AI Bot: New Chat",
+        "icon": "$(add)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aibotSidebar",
+          "title": "AI Bot",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "aibotSidebar": [
+        {
+          "type": "webview",
+          "id": "aibot.chatView",
+          "name": "Chat"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "aibot.newChat",
+          "when": "view == aibot.chatView",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI Bot",
+      "properties": {
+        "aibot.backendUrl": {
+          "type": "string",
+          "default": "https://your-backend-url.ms",
+          "description": "Backend URL (devtunnel or localhost)"
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.9.2"
+  }
+}
