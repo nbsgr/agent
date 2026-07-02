@@ -438,31 +438,94 @@ def run_terminal(arguments, workspace):
     }
 
     try:
-        result = subprocess.run(
+        import time
+        
+        # Start process
+        process = subprocess.Popen(
             command,
             shell=True,
             cwd=workspace,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout
+            bufsize=1,
+            universal_newlines=True
         )
 
-        output = result.stdout
-        if result.stderr:
-            output += "\n" + result.stderr
+        output_queue = queue.Queue()
+        
+        def read_stream(stream, name):
+            try:
+                for line in iter(stream.readline, ""):
+                    output_queue.put((name, line))
+            except Exception:
+                pass
+            finally:
+                try:
+                    stream.close()
+                except Exception:
+                    pass
 
-        logger.info(f"[RUN_TERMINAL] SUCCESS exit_code={result.returncode}")
+        t_out = threading.Thread(target=read_stream, args=(process.stdout, "stdout"), daemon=True)
+        t_err = threading.Thread(target=read_stream, args=(process.stderr, "stderr"), daemon=True)
+        t_out.start()
+        t_err.start()
+
+        start_time = time.time()
+        full_output = ""
+
+        # Loop until process ends or times out
+        while True:
+            # Drain queue and stream immediately to frontend to keep connection alive
+            has_output = False
+            while not output_queue.empty():
+                stream_name, line = output_queue.get()
+                full_output += line
+                has_output = True
+                yield {
+                    "type": "action",
+                    "action": "run_terminal",
+                    "message": line.rstrip("\r\n")
+                }
+
+            # Check if process terminated
+            ret = process.poll()
+            if ret is not None:
+                break
+
+            # Check timeout
+            if time.time() - start_time > timeout:
+                logger.warning(f"[RUN_TERMINAL] TIMEOUT command='{command}'")
+                process.terminate()
+                time.sleep(0.5)
+                process.kill()
+                raise subprocess.TimeoutExpired(command, timeout)
+
+            # Sleep briefly to avoid busy-waiting, unless we are actively receiving stdout
+            if not has_output:
+                time.sleep(0.1)
+
+        # Drain any final buffered lines
+        while not output_queue.empty():
+            stream_name, line = output_queue.get()
+            full_output += line
+            yield {
+                "type": "action",
+                "action": "run_terminal",
+                "message": line.rstrip("\r\n")
+            }
+
+        logger.info(f"[RUN_TERMINAL] SUCCESS exit_code={ret}")
         yield {
             "type": "tool_result",
             "tool": "run_terminal",
-            "success": result.returncode == 0,
+            "success": ret == 0,
             "command": command,
-            "exit_code": result.returncode,
-            "output": output
+            "exit_code": ret,
+            "output": full_output
         }
 
     except subprocess.TimeoutExpired:
-        logger.error(f"[RUN_TERMINAL] TIMEOUT command='{command}'")
         yield {
             "type": "tool_result",
             "tool": "run_terminal",
